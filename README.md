@@ -10,6 +10,7 @@ Express.js server that integrates with LinkedIn's official API to create posts w
 - Centralized error handling middleware
 - Health check endpoint
 - Environment configuration with `.env`
+- Docker containerization and automated CI/CD pipeline
 
 ## Project Structure
 
@@ -67,6 +68,17 @@ npm start
 ```
 
 The server will start on the port specified in the `.env` file (default: 3000).
+
+### Docker
+
+Build and run the application in a Docker container:
+
+```bash
+docker build -t n8n-support .
+docker run -p 3000:3000 --env-file .env n8n-support
+```
+
+The project includes automated Docker builds and pushes to DockerHub via GitHub Actions on every push to the main branch.
 
 ## API Endpoints
 
