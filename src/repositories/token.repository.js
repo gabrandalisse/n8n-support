@@ -36,7 +36,7 @@ class TokenRepository {
       }
 
       const isExpired = Date.now() >= tokenData.expires_at;
-      
+
       if (isExpired) {
         logger.warn("Token has expired");
       }

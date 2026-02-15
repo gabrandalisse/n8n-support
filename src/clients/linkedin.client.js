@@ -1,25 +1,19 @@
 const axios = require("axios");
 const { ApiError } = require("../middleware/errorHandler");
 const logger = require("../config/logger");
-const TokenRepository = require("../repositories/token.repository");
-const db = require("../config/node-json-db");
 
 const LINKEDIN_API_BASE_URL = "https://api.linkedin.com/v2";
 const LINKEDIN_TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 
 class LinkedInClient {
-  constructor(clientId, clientSecret) {
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    this.tokenRepository = new TokenRepository(db);
+  constructor(tokenRepository) {
+    this.clientId = process.env.LINKEDIN_CLIENT_ID;
+    this.clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
+    this.tokenRepository = tokenRepository;
   }
 
   async exchangeCodeForToken(code) {
     try {
-      if (!code) {
-        throw new ApiError(400, "Authorization code is required");
-      }
-
       if (!process.env.LINKEDIN_CALLBACK_URL) {
         throw new ApiError(500, "LINKEDIN_CALLBACK_URL is not configured");
       }
@@ -57,10 +51,7 @@ class LinkedInClient {
         expires_at: Date.now() + expires_in * 1000,
       };
 
-      await this.tokenRepository.saveToken(tokenData);
-      logger.info(
-        "Successfully obtained and stored access token from LinkedIn",
-      );
+      logger.info("Successfully obtained  access token from LinkedIn");
       return tokenData;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -81,6 +72,8 @@ class LinkedInClient {
   async getAccessToken() {
     try {
       const tokenData = await this.tokenRepository.getToken();
+
+      logger.debug("Retrieved token data from repository:" + JSON.stringify(tokenData));
 
       if (!tokenData) {
         throw new ApiError(
@@ -120,8 +113,6 @@ class LinkedInClient {
       const response = await axios.get(`${LINKEDIN_API_BASE_URL}/userinfo`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          //  'LinkedIn-Version': '202401',
-          //  'X-Restli-Protocol-Version': '2.0.0',
         },
       });
 
@@ -179,7 +170,7 @@ class LinkedInClient {
               media: [
                 {
                   status: "READY",
-                  media: postData.imageUrl, // ⚠️ Idealmente debería ser un asset URN
+                  media: postData.imageUrl,
                 },
               ],
             }),

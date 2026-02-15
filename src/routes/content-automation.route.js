@@ -7,6 +7,10 @@ function createContentAutomationRoutes(contentAutomationController) {
     contentAutomationController.createPost(req, res, next);
   });
 
+  router.post("/exchange-code", (req, res, next) => {
+    contentAutomationController.exchangeCode(req, res, next);
+  });
+
   return router;
 }
 

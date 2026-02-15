@@ -7,12 +7,13 @@ const { errorHandler } = require("./middleware/errorHandler");
 const requestLogger = require("./middleware/requestLogger");
 const LinkedInClient = require("./clients/linkedin.client");
 const LinkedInService = require("./services/linkedin.service");
-const AuthService = require("./services/auth.service");
+const ContentAutomationService = require("./services/content-automation.service");
+const ValidationService = require("./services/validation.service");
 const ContentAutomationController = require("./controllers/content-automation.controller");
-const AuthController = require("./controllers/auth.controller");
 const createContentAutomationRoutes = require("./routes/content-automation.route");
-const createAuthRoutes = require("./routes/auth.route");
 const createHealthRoutes = require("./routes/health.route");
+const db = require("./config/node-json-db");
+const TokenRepository = require("./repositories/token.repository");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,34 +23,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(helmetConfig);
 app.use(requestLogger);
 
-const linkedInClient = new LinkedInClient(
-  process.env.LINKEDIN_CLIENT_ID,
-  process.env.LINKEDIN_CLIENT_SECRET,
+const tokenRepository = new TokenRepository(db);
+const linkedInClient = new LinkedInClient(tokenRepository);
+const validationService = new ValidationService();
+const linkedInService = new LinkedInService(
+  validationService,
+  linkedInClient,
+  tokenRepository,
 );
 
-const linkedInService = new LinkedInService(linkedInClient);
-const authService = new AuthService(linkedInClient);
+const contentAutomationService = new ContentAutomationService(linkedInService);
 const contentAutomationController = new ContentAutomationController(
-  linkedInService,
+  contentAutomationService,
 );
-const authController = new AuthController(authService);
 
 app.use("/health", createHealthRoutes());
 app.use(
   "/api/content-automation",
   createContentAutomationRoutes(contentAutomationController),
 );
-app.use("/api/auth", createAuthRoutes(authController));
-
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: {
-      statusCode: 404,
-      message: "Route not found",
-    },
-  });
-});
 
 app.use(errorHandler);
 

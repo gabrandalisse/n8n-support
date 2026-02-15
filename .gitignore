@@ -33,3 +33,6 @@ build/
 db/tokens.json
 
 ContentAutomationDB.json
+
+db
+db/
