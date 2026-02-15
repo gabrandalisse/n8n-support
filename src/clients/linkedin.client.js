@@ -12,6 +12,21 @@ class LinkedInClient {
     this.tokenRepository = tokenRepository;
   }
 
+  handleError(error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    const statusCode = error.response?.status || 500;
+    const message =
+      error.response?.data?.error_description ||
+      error.response?.data?.message ||
+      error.message;
+
+    logger.error(message);
+    throw new ApiError(statusCode, message);
+  }
+
   async exchangeCodeForToken(code) {
     try {
       if (!process.env.LINKEDIN_CALLBACK_URL) {
@@ -54,18 +69,7 @@ class LinkedInClient {
       logger.info("Successfully obtained  access token from LinkedIn");
       return tokenData;
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      const statusCode = error.response?.status || 500;
-      const message =
-        error.response?.data?.error_description ||
-        error.message ||
-        "Failed to exchange OAuth code for access token";
-
-      logger.error(`Failed to exchange code for token: ${message}`);
-      throw new ApiError(statusCode, message);
+      this.handleError(error);
     }
   }
 
@@ -73,7 +77,9 @@ class LinkedInClient {
     try {
       const tokenData = await this.tokenRepository.getToken();
 
-      logger.debug("Retrieved token data from repository:" + JSON.stringify(tokenData));
+      logger.debug(
+        "Retrieved token data from repository:" + JSON.stringify(tokenData),
+      );
 
       if (!tokenData) {
         throw new ApiError(
@@ -91,15 +97,7 @@ class LinkedInClient {
 
       return tokenData.access_token;
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      logger.error(`Failed to get access token: ${error.message}`);
-      throw new ApiError(
-        500,
-        `Failed to retrieve access token: ${error.message}`,
-      );
+      this.handleError(error);
     }
   }
 
@@ -130,21 +128,7 @@ class LinkedInClient {
       logger.info(`Retrieved member ID from /me endpoint: ${memberId}`);
       return memberId;
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      const statusCode = error.response?.status || 500;
-      const errorMessage = error.response?.data?.message || error.message;
-
-      logger.error(
-        `Failed to fetch user profile: Status ${statusCode}, Message: ${errorMessage}`,
-      );
-
-      throw new ApiError(
-        statusCode,
-        `Failed to retrieve member ID: ${errorMessage}`,
-      );
+      this.handleError(error);
     }
   }
 
@@ -197,17 +181,7 @@ class LinkedInClient {
 
       return response.data;
     } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-
-      const statusCode = error.response?.status || 500;
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to create LinkedIn post";
-
-      throw new ApiError(statusCode, message);
+      this.handleError(error);
     }
   }
 }
