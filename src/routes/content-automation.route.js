@@ -8,7 +8,7 @@ function createContentAutomationRoutes(contentAutomationController) {
   });
 
   router.post("/exchange-code", (req, res, next) => {
-    contentAutomationController.exchangeCode(req, res, next);
+    contentAutomationController.exchangeCodeForToken(req, res, next);
   });
 
   return router;
