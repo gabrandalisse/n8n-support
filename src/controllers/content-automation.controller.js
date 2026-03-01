@@ -54,6 +54,52 @@ class ContentAutomationController {
       next(error);
     }
   }
+
+  async setAccessToken(req, res, next) {
+    try {
+      const {
+        tokenData: { access_token, expires_in, expires_at },
+      } = req.body;
+
+      if (!access_token || !expires_in || !expires_at) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            statusCode: 400,
+            message: "Required token data is missing in request body",
+          },
+        });
+      }
+
+      const tokenData = {
+        access_token,
+        expires_in,
+        expires_at,
+      };
+
+      await this.contentAutomationService.setAccessToken(tokenData);
+
+      res.json({
+        success: true,
+        data: tokenData,
+        message: "Successfully set access token",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async test(req, res, next) {
+    try {
+      res.status(201).json({
+        success: true,
+        data: req.body,
+        message: "post created successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = ContentAutomationController;

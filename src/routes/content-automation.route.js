@@ -11,6 +11,14 @@ function createContentAutomationRoutes(contentAutomationController) {
     contentAutomationController.exchangeCodeForToken(req, res, next);
   });
 
+  router.post("/set-access-token", (req, res, next) => {
+    contentAutomationController.setAccessToken(req, res, next);
+  });
+
+  router.post("/test", (req, res, next) => {
+    contentAutomationController.test(req, res, next);
+  });
+
   return router;
 }
 

@@ -32,7 +32,7 @@ const linkedInService = new LinkedInService(
   tokenRepository,
 );
 
-const contentAutomationService = new ContentAutomationService(linkedInService);
+const contentAutomationService = new ContentAutomationService(linkedInService, tokenRepository);
 const contentAutomationController = new ContentAutomationController(
   contentAutomationService,
 );

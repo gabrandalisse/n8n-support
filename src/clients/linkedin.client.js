@@ -132,6 +132,44 @@ class LinkedInClient {
     }
   }
 
+  async uploadImageToLinkedIn(token, memberId, imageUrl) {
+    const registerResponse = await axios.post(
+      `${LINKEDIN_API_BASE_URL}/assets?action=registerUpload`,
+      {
+        registerUploadRequest: {
+          recipes: ["urn:li:digitalmediaRecipe:feedshare-image"],
+          owner: `urn:li:person:${memberId}`,
+          serviceRelationships: [
+            {
+              relationshipType: "OWNER",
+              identifier: "urn:li:userGeneratedContent",
+            },
+          ],
+        },
+      },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+
+    const uploadUrl =
+      registerResponse.data.value.uploadMechanism[
+        "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"
+      ].uploadUrl;
+    const assetUrn = registerResponse.data.value.asset;
+
+    const imageStream = await axios.get(imageUrl, {
+      responseType: "arraybuffer",
+    });
+
+    await axios.put(uploadUrl, imageStream.data, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "image/png",
+      },
+    });
+
+    return assetUrn;
+  }
+
   async createPost(postData) {
     try {
       const token = await this.getAccessToken();
@@ -139,7 +177,14 @@ class LinkedInClient {
       logger.info("Fetching member ID from LinkedIn profile");
       const memberId = await this.getUserProfile(token);
 
-      const isImagePost = Boolean(postData.imageUrl);
+      let mediaUrn = null;
+      if (postData.imageUrl) {
+        mediaUrn = await this.uploadImageToLinkedIn(
+          token,
+          memberId,
+          postData.imageUrl,
+        );
+      }
 
       const payload = {
         author: `urn:li:person:${memberId}`,
@@ -149,12 +194,13 @@ class LinkedInClient {
             shareCommentary: {
               text: `${postData.title}\n\n${postData.description}`,
             },
-            shareMediaCategory: isImagePost ? "IMAGE" : "NONE",
-            ...(isImagePost && {
+            shareMediaCategory: mediaUrn ? "IMAGE" : "NONE",
+            ...(mediaUrn && {
               media: [
                 {
                   status: "READY",
-                  media: postData.imageUrl,
+                  media: mediaUrn,
+                  description: { text: postData.title || "Image description" },
                 },
               ],
             }),
